@@ -43,6 +43,10 @@
 ## e.g. caused by users or files not found in the local environment
 -i
 
+## Make the loginuid immutable. This prevents tampering with the auid.
+--loginuid-immutable
+
+
 # Self Auditing ---------------------------------------------------------------
 
 ## Audit the audit logs
@@ -244,6 +248,7 @@
 -w /bin/su -p x -k priv_esc
 -w /usr/bin/sudo -p x -k priv_esc
 -w /etc/sudoers -p rw -k priv_esc
+-w /etc/sudoers.d -p rw -k priv_esc
 
 ## Power state
 -w /sbin/shutdown -p x -k power
@@ -377,6 +382,15 @@
 ### Kubelet
 -w /usr/bin/kubelet -k kubelet
 
+## watch for container creation
+-a always,exit -F arch=b32 -S clone -F a0&0x7C020000 -F key=container-create
+-a always,exit -F arch=b64 -S clone -F a0&0x7C020000 -F key=container-create
+
+## watch for containers that may change their configuration
+-a always,exit -F arch=b32 -S unshare,setns -F key=container-config
+-a always,exit -F arch=b64 -S unshare,setns -F key=container-config
+
+
 # High volume events ----------------------------------------------------------
 
 ## Remove them if the cause to much volumen in your einvironment
@@ -407,6 +421,14 @@
 -a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -S setxattr -S lsetxattr -S removexattr -S lremovexattr -F exit=-EACCES -k file_modification
 -a always,exit -F arch=b32 -S rename -S renameat -S truncate -S chmod -S setxattr -S lsetxattr -S removexattr -S lremovexattr -F exit=-EPERM -k file_modification
 -a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -S setxattr -S lsetxattr -S removexattr -S lremovexattr -F exit=-EPERM -k file_modification
+
+## 10.2.5.b All elevation of privileges is logged
+-a always,exit -F arch=b64 -S setuid -Fa0=0 -F exe=/usr/bin/su -F key=10.2.5.b-elevated-privs-session
+-a always,exit -F arch=b32 -S setuid -Fa0=0 -F exe=/usr/bin/su -F key=10.2.5.b-elevated-privs-session
+-a always,exit -F arch=b64 -S setresuid -F a0=0 -F exe=/usr/bin/sudo -F key=10.2.5.b-elevated-privs-session
+-a always,exit -F arch=b64 -S setresuid -F a0=0 -F exe=/usr/bin/sudo -F key=10.2.5.b-elevated-privs-session
+-a always,exit -F arch=b64 -S execve -C uid!=euid -F euid=0 -F key=10.2.5.b-elevated-privs-setuid
+-a always,exit -F arch=b32 -S execve -C uid!=euid -F euid=0 -F key=10.2.5.b-elevated-privs-setuid
 
 # Make the configuration immutable --------------------------------------------
 ##-e 2
