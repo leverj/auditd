@@ -1,29 +1,29 @@
 #      ___             ___ __      __
 #     /   | __  ______/ (_) /_____/ /
-#    / /| |/ / / / __  / / __/ __  / 
-#   / ___ / /_/ / /_/ / / /_/ /_/ /  
-#  /_/  |_\__,_/\__,_/_/\__/\__,_/   
-#                                    
-# Linux Audit Daemon - Best Practice Configuration 
+#    / /| |/ / / / __  / / __/ __  /
+#   / ___ / /_/ / /_/ / / /_/ /_/ /
+#  /_/  |_\__,_/\__,_/_/\__/\__,_/
+#
+# Linux Audit Daemon - Best Practice Configuration
 # /etc/audit/audit.rules
 #
 # Compiled by Florian Roth
-# 
-# Created  : 2017/12/05 
+#
+# Created  : 2017/12/05
 # Modified : 2018/08/05
-# 
+#
 # Based on rules published here:
 #   Gov.uk auditd rules
 #   	https://github.com/gds-operations/puppet-auditd/pull/1
 # 	CentOS 7 hardening
 # 		https://highon.coffee/blog/security-harden-centos-7/#auditd---audit-daemon
-# 	Linux audit repo 
+# 	Linux audit repo
 # 		https://github.com/linux-audit/audit-userspace/tree/master/rules
 # 	Auditd high performance linux auditing
 # 		https://linux-audit.com/tuning-auditd-high-performance-linux-auditing/
 #
 # Further rules
-# 	For PCI DSS compliance see: 
+# 	For PCI DSS compliance see:
 # 		https://github.com/linux-audit/audit-userspace/blob/master/rules/30-pci-dss-v31.rules
 # 	For NISPOM compliance see:
 # 		https://github.com/linux-audit/audit-userspace/blob/master/rules/30-nispom.rules
@@ -40,8 +40,8 @@
 -f 1
 
 # Ignore errors
-## e.g. caused by users or files not found in the local environment  
--i 
+## e.g. caused by users or files not found in the local environment
+-i
 
 # Self Auditing ---------------------------------------------------------------
 
@@ -75,6 +75,17 @@
 ## Cron jobs fill the logs with stuff we normally don't want (works with SELinux)
 -a never,user -F subj_type=crond_t
 -a exit,never -F subj_type=crond_t
+-a always,exclude -F msgtype=CRYPTO_KEY_USER
+-a exclude,always -F msgtype=MAC_IPSEC_EVENT
+-a exclude,always -F msgtype=USER_AUTH
+-a exclude,always -F msgtype=USER_ACCT
+-a exclude,always -F msgtype=CRED_REFR
+-a exclude,always -F msgtype=CRED_DISP
+-a exclude,always -F msgtype=CRED_ACQ
+-a exclude,always -F msgtype=USER_START
+-a exclude,always -F msgtype=USER_END
+-a exclude,always -F msgtype=LOGIN
+## Note LOGIN above is different from USER_LOGIN, which will still be logged
 
 ## This prevents chrony from overwhelming the logs
 -a never,exit -F arch=b64 -S adjtimex -F auid=unset -F uid=_chrony -F subj_type=chronyd_t
@@ -154,6 +165,7 @@
 
 ## Sudoers file changes
 -w /etc/sudoers -p wa -k actions
+-w /etc/sudoers.d -p wa -k actions
 
 ## Passwd
 -w /usr/bin/passwd -p x -k passwd_modification
@@ -174,6 +186,9 @@
 -w /var/log/tallylog -p wa -k login
 
 ## Network Environment
+## Port listen
+-a always,exit -S listen -F key=listen
+
 ### Changes to hostname
 -a always,exit -F arch=b32 -S sethostname -S setdomainname -k network_modifications
 -a always,exit -F arch=b64 -S sethostname -S setdomainname -k network_modifications
@@ -209,13 +224,13 @@
 -w /etc/ssh/sshd_config -k sshd
 
 # Systemd
--w /bin/systemctl -p x -k systemd 
+-w /bin/systemctl -p x -k systemd
 -w /etc/systemd/ -p wa -k systemd
 
 ## SELinux events that modify the system's Mandatory Access Controls (MAC)
 -w /etc/selinux/ -p wa -k mac_policy
 
-## Critical elements access failures 
+## Critical elements access failures
 -a exit,always -F arch=b64 -S open -F dir=/etc -F success=0 -k unauthedfileaccess
 -a exit,always -F arch=b64 -S open -F dir=/bin -F success=0 -k unauthedfileaccess
 -a exit,always -F arch=b64 -S open -F dir=/sbin -F success=0 -k unauthedfileaccess
@@ -297,12 +312,12 @@
 -w /usr/bin/rdesktop -p x -k sbin_susp
 
 ## Sbin suspicious activity
--w /sbin/iptables -p x -k sbin_susp 
+-w /sbin/iptables -p x -k sbin_susp
 -w /sbin/ifconfig -p x -k sbin_susp
 -w /usr/sbin/tcpdump -p x -k sbin_susp
 -w /usr/sbin/traceroute -p x -k sbin_susp
 
-## Injection 
+## Injection
 ### These rules watch for code injection by the ptrace facility.
 ### This could indicate someone trying to do something bad or just debugging
 -a always,exit -F arch=b32 -S ptrace -k tracing
@@ -341,7 +356,7 @@
 ## GDS specific secrets
 -w /etc/puppet/ssl -p wa -k puppet_ssl
 
-## IBM Bigfix BESClient 
+## IBM Bigfix BESClient
 -a exit,always -F arch=b64 -S open -F dir=/opt/BESClient -F success=0 -k soft_besclient
 -w /var/opt/BESClient/ -p wa -k soft_besclient
 
@@ -359,14 +374,14 @@
 -w /etc/sysconfig/docker-storage -k docker
 -w /usr/lib/systemd/system/docker.service -k docker
 
-### Kubelet 
+### Kubelet
 -w /usr/bin/kubelet -k kubelet
 
 # High volume events ----------------------------------------------------------
 
 ## Remove them if the cause to much volumen in your einvironment
 
-## Root command executions 
+## Root command executions
 -a exit,always -F arch=b64 -F euid=0 -S execve -k rootcmd
 -a exit,always -F arch=b32 -F euid=0 -S execve -k rootcmd
 
