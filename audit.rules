@@ -369,15 +369,15 @@
 -w /etc/chef -p wa -k soft_chef
 
 ### Docker
--w /usr/bin/dockerd -k docker
--w /usr/bin/docker -k docker
--w /usr/bin/docker-containerd -k docker
--w /usr/bin/docker-runc -k docker
--w /var/lib/docker -k docker
--w /etc/docker -k docker
--w /etc/sysconfig/docker -k docker
--w /etc/sysconfig/docker-storage -k docker
--w /usr/lib/systemd/system/docker.service -k docker
+-w /usr/bin/dockerd -p wa -k docker
+-w /usr/bin/docker -p wa -k docker
+-w /usr/bin/docker-containerd -p wa -k docker
+-w /usr/bin/docker-runc -p wa -k docker
+-w /var/lib/docker -p wa -k docker
+-w /etc/docker -p wa -k docker
+-w /etc/sysconfig/docker -p wa -k docker
+-w /etc/sysconfig/docker-storage -p wa -k docker
+-w /usr/lib/systemd/system/docker.service -p wa -k docker
 
 ### Kubelet
 -w /usr/bin/kubelet -k kubelet
